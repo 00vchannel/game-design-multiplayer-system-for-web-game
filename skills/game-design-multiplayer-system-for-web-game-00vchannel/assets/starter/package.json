@@ -1,0 +1,20 @@
+{
+  "name": "my-classroom-game",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "relay": "wrangler dev --port 8790",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.4",
+    "wrangler": "4.151.1"
+  }
+}
