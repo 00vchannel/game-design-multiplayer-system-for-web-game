@@ -16,7 +16,7 @@ async function moveDirectory(from,to){
  await plain(from);await plain(to);
  for(let attempt=0;;attempt++){try{await fs.rename(from,to);return;}catch(e){if(!['EPERM','EBUSY'].includes(e.code)||attempt>=4)throw e;if(!await exists(from)||await exists(to))throw e;await delay(200*(attempt+1));}}
 }
-async function json(p){return JSON.parse(await fs.readFile(p,'utf8'));}
+async function json(p){return JSON.parse((await fs.readFile(p,'utf8')).replace(/^\uFEFF/,''));}
 async function atomic(p,data){await plain(p);await fs.mkdir(path.dirname(p),{recursive:true});const temp=p+'.'+randomUUID()+'.partial';await fs.writeFile(temp,JSON.stringify(data,null,2)+'\n',{flag:'wx'});await fs.rename(temp,p);}
 async function inventory(root){const files={};if(!await exists(root))return files;async function walk(dir,prefix=''){for(const e of await fs.readdir(dir,{withFileTypes:true})){const rel=prefix+e.name,p=within(root,rel);await plain(p);if(e.isDirectory())await walk(p,rel+'/');else if(e.isFile()){if(rel!==marker)files[rel]=hash(await fs.readFile(p));}else throw Error('不支援的檔案類型：'+rel);}}await walk(root);return files;}
 async function bytes(url,max=2*1024*1024){const r=await fetch(url,{redirect:'error',headers:{'User-Agent':'Deep-Frame-Studio-course-setup','Accept':'application/vnd.github+json'},signal:AbortSignal.timeout(60000)});if(!r.ok)throw Error('GitHub 下載失敗 '+r.status+'；保留目前版本，稍後重新執行更新');let size=0;const parts=[];for await(const p of r.body){size+=p.length;if(size>max)throw Error('下載超出大小限制');parts.push(p);}return Buffer.concat(parts);}
@@ -40,7 +40,7 @@ export async function fetchSnapshot(workDir){
  for(let i=0;i<entries.length;i+=4)await Promise.all(entries.slice(i,i+4).map(async e=>{
   const rel=e.path.slice(prefix.length),dest=within(source,rel);await plain(dest);let body;
   if(await exists(dest)){body=await fs.readFile(dest);if(blobHash(body)!==e.sha)throw Error('下載暫存已修改：'+dest);}
-  else{body=await bytes('https://raw.githubusercontent.com/'+repository+'/'+commit+'/'+e.path.split('/').map(encodeURIComponent).join('/'));if(body.length!==e.size||blobHash(body)!==e.sha)throw Error('GitHub 檔案校驗失敗：'+rel);await fs.mkdir(path.dirname(dest),{recursive:true});const temp=dest+'.'+randomUUID()+'.partial';await fs.writeFile(temp,body,{flag:'wx'});await fs.rename(temp,dest);}
+  else{body=await bytes('https://raw.githubusercontent.com/'+repository+'/'+commit+'/'+e.path.split('/').map(encodeURIComponent).join('/'));if(body.length!==e.size||blobHash(body)!==e.sha)throw Error('GitHub 檔案校驗失敗：'+rel);await fs.mkdir(path.dirname(dest),{recursive:true});const temp=path.join(path.dirname(source),commit+'-'+randomUUID()+'.partial');await fs.writeFile(temp,body,{flag:'wx'});await fs.rename(temp,dest);}
   expected[rel]=hash(body);
  }));
  const actual=await inventory(source);if(JSON.stringify(Object.keys(actual).sort())!==JSON.stringify(Object.keys(expected).sort()))throw Error('下載目錄有額外檔案');
