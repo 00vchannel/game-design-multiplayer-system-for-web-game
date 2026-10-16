@@ -1,0 +1,3 @@
+interface:
+  display_name: "Game design: Multiplayer system for web game"
+  short_description: "把學員自己的網頁遊戲接上房主主持、Cloudflare 轉送的多人房間，附同步與斷線排錯。"
