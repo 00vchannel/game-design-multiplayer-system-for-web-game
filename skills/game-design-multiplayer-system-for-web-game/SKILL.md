@@ -1,36 +1,36 @@
 ---
 name: game-design-multiplayer-system-for-web-game
-description: "Game design: Multiplayer system for web game。當學員提到此名稱、要求將自己的網頁遊戲接上 2–4 人房間，或修復其同步、背景分頁、離線及重開局問題時使用。內附 Cloudflare 轉送、房主判定的可執行範本；支援 Canvas 或 Three.js，不替學員決定玩法。"
+description: "Add or debug 2–4 player multiplayer in a browser game using a host-owned simulation and a Cloudflare relay. Includes a runnable starter, integration contracts, background-tab handling, disconnect cleanup, and round synchronization. Use for Canvas or Three.js games; preserve the user's gameplay."
 ---
 
 # Game design: Multiplayer system for web game
 
 by Deep Frame Studio
 
-讓學員用自己寫的 prompt 開發玩法，同時沿用本 Skill 的多人基礎。這是「房主電腦運算、Cloudflare Workers + SQLite Durable Objects 轉送」，不是玩家直接互連，也不是雲端運算遊戲。2–4 人，電腦開房，電腦或手機加入；不需要購買伺服器，但免費額度不是無限制。
+Use the user's gameplay request with the included multiplayer foundation. The desktop host simulates the game; Cloudflare Workers and SQLite Durable Objects relay messages. This is not direct peer-to-peer networking or a cloud-hosted game simulation. Guests may join from desktop or mobile browsers. Hosting allowances have limits.
 
-## 名稱與啟用
-完整名稱就是 **Game design: Multiplayer system for web game**。Windows 資料夾不允許冒號，因此可攜識別字是 `game-design-multiplayer-system-for-web-game`；學員用完整名稱描述需求時，也必須載入本檔。ZCode 的 `$` 選單可能顯示資料夾識別字，不要謊稱一定顯示帶冒號的標題。
+## Start here
 
-## 開始工作
-1. 先讀目前專案及學員自己的 prompt。已給出的玩法不要重新決定；缺少會影響玩法的資訊才問。只安裝環境時不自行建立玩法。構思仍使用 gameplay-brainstorm-00vchannel，由學員親自寫開發 prompt。
-2. 接入前讀 [玩法接入接口](references/integration.md)。既有作品先依實際連線版本整合；新專案以本次安裝 Skill 同目錄的 `assets/starter` 為範本，課程包的 `multiplayer-starter` 是固定版本檢查場，不假設與更新後 Skill 相同。沒有課程包時，本 Skill 也有完整範本，不依賴老師電腦路徑。已有遊戲時逐項合併，不能整包覆蓋作品。
-3. 先保存修改前版本。盤點現有角色、輸入、互動、勝負與渲染，列出哪些狀態要全隊共享，再對照接口修改。通常只改 `src/game/adapter.js`、`src/main.js` 與畫面檔案；不要重寫 `src/net`、`shared/protocol.js` 或 `worker/index.js`。
-4. 使用既有固定版本套件與鎖檔。依範本 README 啟動前端及本機房間服務；不要只開 Vite 就宣稱多人可用。需測試或使用者要求驗收時，依 [驗證情境](references/verification.md) 執行。不能把建置成功當作多人行為成功。
-5. 發佈時才讀 [發佈流程](references/deployment.md)。setup 的登入授權不等於發佈作品授權。沿用已授權範圍，不重複詢問同一事項；不可啟用付費服務或要求查帳單。
+1. Inspect the existing project and request. Preserve decisions already made. Ask only for missing details that materially change gameplay or integration. Installing this skill alone is not permission to build or deploy a game. If gameplay needs exploration, use a brainstorming skill only when available and relevant; it is not a prerequisite.
+2. Read [integration contracts](references/integration.md). For a new project, use this installed skill's `assets/starter`. For an existing game, compare its networking version and merge only required changes. An older downloaded starter may differ from the installed skill; never replace the entire game to update it.
+3. Save the pre-change state. Identify inputs, shared state, interactions, win/loss, and rendering. Usually gameplay work belongs in `src/game/adapter.js`, `src/main.js`, and presentation files. Preserve `src/net`, `shared/protocol.js`, and `worker/index.js` unless a diagnosed problem requires changing them.
+4. Keep the existing package versions and lockfile. Follow the starter README to run both the frontend and the local relay. A Vite page alone does not demonstrate working multiplayer. When verification is needed or requested, use [verification scenarios](references/verification.md); a successful build does not prove runtime behavior.
+5. Read [deployment guidance](references/deployment.md) only when deploying. Use the user's account and authorized scope. Installing a skill or logging in does not authorize publication. Do not enable paid services.
 
-## 不可破壞的連線規則
-- 房主是唯一共同狀態來源。訪客只傳操作，不能傳分數、物品歸屬或完整世界狀態。角色 ID 由房間服務綁定 socket，不信任訪客自己填寫的 ID。
-- 房主在 `host.worker.js` 中按固定步長更新玩法。`requestAnimationFrame` 只畫畫面，不能推進訂單、倒數、碰撞或共同狀態。玩法接口不能讀 DOM、`window`、Three.js 物件或發送網路要求。
-- `visibilitychange`、`blur` 只清除輸入，不能關房、判定房主離線或停止多人模擬。背景 Worker 也可能被系統暫停；醒來要限制補算量，重新等心跳，不能以暫停時間直接判斷網路失效。不可用假音訊、禁止省電或不斷重新整理作為解法。
-- 只有真正關閉遊戲、離開、連線失效或房間到期才結束房間。沒有自動換房主、刷新後重連或離線續玩；不要擅自承諾。
-- `round` 隔離局次，`revision` 隔離快照，`seq` 去除重複操作。新局必須收到服務端 `round` 後才重建狀態；不能只把 UI 改成大廳，不能沿用前局物品、計時、輸入、序號。
-- 每個玩家的連續方向輸入短時間未更新便歸零；互動只在按下瞬間送一次。不要把按住互動鍵變成每幀領取或交付。按鍵、觸控、取消觸控、失焦都要釋放。
-- 爭用物件時，在房主的一次同步 `applyInput` 中先檢查再修改，不在中間 await。離線玩家持有的物品由 `syncPlayers` 回收至可取得的位置。
-- 所有共享狀態都可 JSON 序列化且有界；禁止 NaN、Infinity、循環參照、場景物件、音訊、材質與圖片資料。只傳識別字、位置與玩法數值。改結構時同步改 `validateState`；不刪驗證來掩蓋錯誤。
-- 雲端維持人數、授權、局次、房間階段與轉送；不把玩法 tick 移到 Durable Object。保留 Hibernation WebSocket API、連線 attachment 恢復、SQLite migration、訊息與頻率限制。
+## Networking invariants
 
-## 卡關時
-讀 [常見問題與修復](references/troubleshooting.md)，按可觀察證據定位。不要為了解決一個錯誤而換平台、加自製 MCP、關閉來源檢查或一次重寫整個系統。
+- Only the host owns shared game state. Guests send actions, not authoritative scores, item ownership, or world snapshots. Bind player identity to the server-side socket, not a client-supplied ID.
+- Run fixed-step simulation in `host.worker.js`. Use `requestAnimationFrame` only for rendering. Gameplay adapters must not access the DOM, `window`, Three.js objects, or network APIs.
+- On `visibilitychange` or `blur`, clear inputs without closing the room or declaring the host gone. Operating systems may suspend workers; limit catch-up work after waking and wait for fresh heartbeats. Do not use fake audio, disable power saving, or repeatedly reload as a workaround.
+- End rooms for actual departure, closed connections, connection failure, or expiry. The starter has no host migration, reconnect-after-refresh, or offline continuation; do not promise these features.
+- Isolate rounds with `round`, snapshots with `revision`, and repeated inputs with `seq`. Reset only after receiving the server's new round. Do not carry old items, timers, inputs, or sequence numbers into a new game.
+- Expire stale movement inputs. Send one interaction per press, not every frame while held. Release keyboard and touch inputs on release, cancellation, or loss of focus.
+- Resolve contested objects synchronously in one host `applyInput`: check then mutate without `await` between them. In `syncPlayers`, return disconnected players' held objects to an accessible location.
+- Keep shared data bounded and JSON-serializable. Reject NaN, Infinity, cycles, scene objects, audio, materials, and image data. Send identifiers and gameplay values. Update `validateState` with schema changes; never remove validation to hide errors.
+- Keep admission, capacity, rounds, room phases, and forwarding in the relay. Keep gameplay ticks on the host. Preserve hibernating WebSockets, attachment recovery, SQLite migrations, and message/rate limits.
 
-完成時只說明學員能做甚麼、實際驗證項目與尚未驗證的限制。明確區分「檔案已安裝」「ZCode 已載入」「本機多人可用」「公開網路可用」。
+## Debugging and completion
+
+Read [troubleshooting](references/troubleshooting.md) for the observed failure. Do not switch platforms, add unrelated MCP servers, disable origin checks, or rewrite the whole system to fix one symptom.
+
+Respond in the user's language. Distinguish files installed, skill loaded, local multiplayer verified, and public-network behavior verified. Updating the skill never updates an existing game's networking automatically. This directory preserves the legacy identifier; new installations should choose `game-design-multiplayer-system-for-web-game-00vchannel`. Technical references include Traditional Chinese and may be explained in the user's language.

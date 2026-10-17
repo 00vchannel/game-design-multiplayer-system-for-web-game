@@ -16,8 +16,13 @@ export const configurations={
     ],
     "requiredPaths": [
       "SKILL.md",
-      "assets/starter/package.json"
+      "assets/starter/package.json",
+      "references/integration.md",
+      "references/troubleshooting.md",
+      "references/verification.md",
+      "references/deployment.md"
     ],
+    "knownLegacyVariants": {"SKILL.md": ["a605c6136cde06c5a0f12c5405c6772a7ad5f6afc51375ba92c9cd17eb6f0c5d"], "assets/starter/AGENTS.md": ["5d9fe32f405a70a264cb19dcc38bf7236b3a6af59aabe1a7eb89a8e9b9d33d83"]},
     "knownLegacyFiles": {
       "assets/starter/shared/protocol.js": "424b4a30aa9ea955c1ca43040f4adbc6105127903b9b540f97f1b2da73127817",
       "assets/starter/src/net/room-client.js": "3272044f8d3c8cf08d7a43b8dbadf0236413123a5700c39d81a726c80a6c7e50",
@@ -62,7 +67,7 @@ export const configurations={
   }
 };
 export function createSkillUpdater(config){
-const {repository,skillName,recordPrefix,key,manifestKey,aliases,requiredPaths,knownLegacyFiles}=config;
+const {repository,skillName,recordPrefix,key,manifestKey,aliases,requiredPaths,knownLegacyFiles,knownLegacyVariants={}}=config;
 const marker='.deep-frame-install.json';
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const blobHash=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');
@@ -121,7 +126,7 @@ async function installSnapshot(snapshot,{skillsDir,legacyFiles={},afterRename}={
   const saved=await exists(stateFile)?await json(stateFile):null;
   if(saved&&(saved.repository!==repository||saved.schema!==1||!saved.files||typeof saved.files!=='object'))throw Error('Skill 安裝紀錄不合法');
   const baseline=saved?.files||(Object.keys(legacyFiles).length?legacyFiles:knownLegacyFiles);
-  const conflict=Object.keys(current).filter(name=>baseline[name]!==current[name]&&snapshot.files[name]!==current[name]);
+  const conflict=Object.keys(current).filter(name=>baseline[name]!==current[name]&&snapshot.files[name]!==current[name]&&!(!saved&&previousTarget!==target&&knownLegacyVariants[name]?.includes(current[name])));
   if(conflict.length)throw Error('保留學員修改，未更新 Skill：'+conflict.join('、'));
   const actual=await inventory(snapshot.source);const keys=Object.keys(snapshot.files).sort();
   if(JSON.stringify(Object.keys(actual).sort())!==JSON.stringify(keys)||keys.some(n=>actual[n]!==snapshot.files[n]))throw Error('待安裝 Skill 校驗失敗');

@@ -94,6 +94,6 @@ The included architecture supports 2–4 players with a desktop host. It does no
 
 - `skills/game-design-multiplayer-system-for-web-game-00vchannel/`: current skill and starter.
 - `scripts/update-github-skills.mjs`: managed installer and updater.
-- `skills/game-design-multiplayer-system-for-web-game/`: preserved compatibility version for older installers.
+- `skills/game-design-multiplayer-system-for-web-game/`: compatibility identifier for older installers, with the same standalone guidance.
 
 `agents/openai.yaml` supplies Codex display metadata; other compatible agents can ignore it. Publishing a change to GitHub `main` makes it available on the next requested update; editing a local copy alone does not publish it.
